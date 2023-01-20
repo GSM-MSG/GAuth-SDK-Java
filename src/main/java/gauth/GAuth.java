@@ -26,6 +26,18 @@ public class GAuth {
         REFRESH
     }
 
+    private static Map<String, String> sendPostGAuthServer(Map<String, String> body, String token, String url) throws IOException {
+        return sendPost(body, token, GAuthServerURL+url);
+    }
+
+    private static Map<String, String> sendPatchGAuthServer(Map<String, String> body, String token, String url, Auth auth) throws IOException {
+        return sendPatch(body, token, GAuthServerURL+ url, auth);
+    }
+
+    private static Map<String, String> sendGetResourceServer(String token, String url) throws IOException {
+        return sendGet(token, ResourceServerURL + url);
+    }
+
     private static Map<String, String> sendGet(String token, String url) throws IOException {
         HttpGet request = new HttpGet(url); //GET 메소드 URL 생성
         request.addHeader("Authorization", token);
