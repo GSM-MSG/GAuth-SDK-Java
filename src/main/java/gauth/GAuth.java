@@ -25,6 +25,43 @@ public class GAuth {
         ACCESS,
         REFRESH
     }
+    public static Map<String, String> generateToken(String email, String password, String clientId, String clientSecret, String redirectUri) throws IOException {
+        String code = generateCode(email, password);
+        return getToken(code, clientId, clientSecret, redirectUri);
+    }
+
+    public static Map<String, String> generateToken(String code, String clientId, String clientSecret, String redirectUri) throws IOException {
+        return getToken(code, clientId, clientSecret, redirectUri);
+    }
+
+    public static String generateCode(String email, String password) throws IOException {
+        Map<String, String> body = new HashMap<>();
+        body.put("email", email);
+        body.put("password", password);
+        String code = sendPostGAuthServer(body, null, "/code").get("code");
+        return code;
+    }
+
+    public static Map<String, String> refresh(String refreshToken) throws IOException{
+        if(!refreshToken.startsWith("Bearer "))
+            refreshToken = "Bearer "+refreshToken;
+        return sendPatchGAuthServer(null, refreshToken, "/token", Auth.REFRESH);
+    }
+
+    public static Map<String, String> getUserInfo(String accessToken) throws IOException{
+        if(!accessToken.startsWith("Bearer "))
+            accessToken = "Bearer "+accessToken;
+        return sendGetResourceServer(accessToken, "/user");
+    }
+
+    private static Map<String, String> getToken(String code, String clientId, String clientSecret, String redirectUri) throws IOException {
+        Map<String, String> body = new HashMap<>();
+        body.put("code", code);
+        body.put("clientId", clientId);
+        body.put("clientSecret", clientSecret);
+        body.put("redirectUri", redirectUri);
+        return sendPostGAuthServer(body, null, "/token");
+    }
 
     private static Map<String, String> sendPostGAuthServer(Map<String, String> body, String token, String url) throws IOException {
         return sendPost(body, token, GAuthServerURL+url);
