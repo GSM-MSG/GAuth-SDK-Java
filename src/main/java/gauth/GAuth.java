@@ -7,7 +7,6 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPatch;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.BasicResponseHandler;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.json.simple.JSONObject;
@@ -25,33 +24,34 @@ public class GAuth {
         ACCESS,
         REFRESH
     }
-    public static Map<String, String> generateToken(String email, String password, String clientId, String clientSecret, String redirectUri) throws IOException {
-        String code = generateCode(email, password);
-        return getToken(code, clientId, clientSecret, redirectUri);
+    public static GAuthToken generateToken(String email, String password, String clientId, String clientSecret, String redirectUri) throws IOException {
+        String code = generateCode(email, password).getCode();
+        return new GAuthToken(getToken(code, clientId, clientSecret, redirectUri));
     }
 
-    public static Map<String, String> generateToken(String code, String clientId, String clientSecret, String redirectUri) throws IOException {
-        return getToken(code, clientId, clientSecret, redirectUri);
+    public static GAuthToken generateToken(String code, String clientId, String clientSecret, String redirectUri) throws IOException {
+        return new GAuthToken(getToken(code, clientId, clientSecret, redirectUri));
     }
 
-    public static String generateCode(String email, String password) throws IOException {
+    public static GAuthCode generateCode(String email, String password) throws IOException {
         Map<String, String> body = new HashMap<>();
         body.put("email", email);
         body.put("password", password);
         String code = sendPostGAuthServer(body, null, "/code").get("code");
-        return code;
+        return new GAuthCode(code);
     }
 
-    public static Map<String, String> refresh(String refreshToken) throws IOException{
+    public static GAuthToken refresh(String refreshToken) throws IOException{
         if(!refreshToken.startsWith("Bearer "))
             refreshToken = "Bearer "+refreshToken;
-        return sendPatchGAuthServer(null, refreshToken, "/token", Auth.REFRESH);
+        return new GAuthToken(sendPatchGAuthServer(null, refreshToken, "/token", Auth.REFRESH));
     }
 
-    public static Map<String, String> getUserInfo(String accessToken) throws IOException{
+    public static GAuthUserInfo getUserInfo(String accessToken) throws IOException{
         if(!accessToken.startsWith("Bearer "))
             accessToken = "Bearer "+accessToken;
-        return sendGetResourceServer(accessToken, "/user");
+        Map<String, Object> map = sendGetResourceServer(accessToken, "/user");
+        return new GAuthUserInfo(map);
     }
 
     private static Map<String, String> getToken(String code, String clientId, String clientSecret, String redirectUri) throws IOException {
@@ -71,11 +71,11 @@ public class GAuth {
         return sendPatch(body, token, GAuthServerURL+ url, auth);
     }
 
-    private static Map<String, String> sendGetResourceServer(String token, String url) throws IOException {
+    private static Map<String, Object> sendGetResourceServer(String token, String url) throws IOException {
         return sendGet(token, ResourceServerURL + url);
     }
 
-    private static Map<String, String> sendGet(String token, String url) throws IOException {
+    private static Map<String, Object> sendGet(String token, String url) throws IOException {
         HttpGet request = new HttpGet(url); //GET 메소드 URL 생성
         request.addHeader("Authorization", token);
         CloseableHttpClient client = HttpClientBuilder.create().build();
