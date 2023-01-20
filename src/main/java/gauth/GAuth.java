@@ -82,8 +82,9 @@ public class GAuth {
         HttpResponse response = client.execute(request);
         if(response.getStatusLine().getStatusCode()!=200)
             throw new RuntimeException();
-        BasicResponseHandler responseHandler = new BasicResponseHandler();
-        String responseBody = responseHandler.handleResponse(response);
+        BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(response.getEntity().getContent(), "UTF-8"));
+        String responseBody = bufferedReader.readLine();
+        bufferedReader.close();
         return mapper.readValue(responseBody, Map.class);
     }
 
@@ -104,8 +105,9 @@ public class GAuth {
         CloseableHttpResponse response = client.execute(request);
         if(response.getStatusLine().getStatusCode()!=200)
             throw new RuntimeException();
-        BasicResponseHandler responseHandler = new BasicResponseHandler();
-        String responseBody = responseHandler.handleResponse(response);
+        BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(response.getEntity().getContent(), "UTF-8"));
+        String responseBody = bufferedReader.readLine();
+        bufferedReader.close();
         return mapper.readValue(responseBody, Map.class);
     }
 
@@ -123,8 +125,9 @@ public class GAuth {
         CloseableHttpResponse response = client.execute(request);
         if(response.getStatusLine().getStatusCode()!=200)
             throw new RuntimeException();
-        BasicResponseHandler responseHandler = new BasicResponseHandler();
-        String responseBody = responseHandler.handleResponse(response);
+        BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(response.getEntity().getContent(), "UTF-8"));
+        String responseBody = bufferedReader.readLine();
+        bufferedReader.close();
         return mapper.readValue(responseBody, Map.class);
     }
 
