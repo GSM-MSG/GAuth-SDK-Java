@@ -1,6 +1,7 @@
 package gauth;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import gauth.exception.GAuthException;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
@@ -124,7 +125,7 @@ public class GAuth {
         CloseableHttpClient client = HttpClientBuilder.create().build();
         CloseableHttpResponse response = client.execute(request);
         if(response.getStatusLine().getStatusCode()!=200)
-            throw new RuntimeException();
+            throw new GAuthException(response.getStatusLine().getStatusCode());
         BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(response.getEntity().getContent(), "UTF-8"));
         String responseBody = bufferedReader.readLine();
         bufferedReader.close();
