@@ -86,7 +86,7 @@ public class GAuthImpl implements GAuth {
         CloseableHttpClient client = HttpClientBuilder.create().build();
         HttpResponse response = client.execute(request);
         if(response.getStatusLine().getStatusCode()!=200)
-            throw new RuntimeException();
+            throw new GAuthException(response.getStatusLine().getStatusCode());
         BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(response.getEntity().getContent(), "UTF-8"));
         String responseBody = bufferedReader.readLine();
         bufferedReader.close();
@@ -109,7 +109,7 @@ public class GAuthImpl implements GAuth {
         CloseableHttpClient client = HttpClientBuilder.create().build();
         CloseableHttpResponse response = client.execute(request);
         if(response.getStatusLine().getStatusCode()!=200)
-            throw new RuntimeException();
+            throw new GAuthException(response.getStatusLine().getStatusCode());
         BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(response.getEntity().getContent(), "UTF-8"));
         String responseBody = bufferedReader.readLine();
         bufferedReader.close();
