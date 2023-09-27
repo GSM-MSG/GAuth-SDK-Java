@@ -1,11 +1,13 @@
 package gauth.impl;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import gauth.GAuth;
 import gauth.GAuthCode;
 import gauth.GAuthToken;
 import gauth.GAuthUserInfo;
 import gauth.exception.GAuthException;
+import gauth.exception.InvalidEncodingException;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
@@ -118,26 +120,43 @@ public class GAuthImpl implements GAuth {
         return mapper.readValue(responseBody, Map.class);
     }
 
-    private Map<String, String> sendPost(Map<String, String> body, String token, String url) throws IOException {
+    private Map<String, String> sendPost(Map<String, String> body, String token, String url) {
         HttpPost request = new HttpPost(url);
         request.setHeader("Accept", "application/json");
         request.setHeader("Connection", "keep-alive");
         request.setHeader("Content-Type", "application/json");
         request.addHeader("Authorization", token);
-        if(body != null){
+        if (body != null) {
             String json = new JSONObject(body).toJSONString();
-            request.setEntity(new StringEntity(json));
+            try {
+                request.setEntity(new StringEntity(json));
+            } catch (UnsupportedEncodingException e) {
+                throw new InvalidEncodingException(e);
+            }
         }
-        CloseableHttpClient client = HttpClientBuilder.create().build();
-        CloseableHttpResponse response = client.execute(request);
-        Integer statusCode = response.getStatusLine().getStatusCode();
-        if(statusCode !=200)
-            throw new GAuthException(statusCode);
-        BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(response.getEntity().getContent(), "UTF-8"));
-        String responseBody = bufferedReader.readLine();
-        bufferedReader.close();
-        return mapper.readValue(responseBody, Map.class);
+        try (
+            CloseableHttpClient client = HttpClientBuilder.create().build();
+            CloseableHttpResponse response = client.execute(request)
+        ) {
+            int statusCode = response.getStatusLine().getStatusCode();
+            if (statusCode != 200) {
+                throw new GAuthException(statusCode);
+            }
+            try (BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(response.getEntity().getContent(), "UTF-8"))) {
+                String responseBody = bufferedReader.readLine();
+                return mapper.readValue(responseBody, Map.class);
+            } catch (IOException e) {
+                throw new RuntimeException("BufferReader Can't read value", e);
+            }
+        }
+        catch (JsonProcessingException e) {
+            throw new RuntimeException("Can't process json", e);
+        }
+        catch (IOException e) {
+            throw new RuntimeException("Can't connect GAuth server", e);
+        }
     }
+
 
 
 }
