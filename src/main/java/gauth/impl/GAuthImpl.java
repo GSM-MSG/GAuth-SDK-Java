@@ -8,7 +8,7 @@ import gauth.GAuthToken;
 import gauth.GAuthUserInfo;
 import gauth.exception.GAuthException;
 import gauth.exception.InvalidEncodingException;
-import org.apache.http.HttpResponse;
+import gauth.exception.JsonNotParseException;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPatch;
@@ -31,16 +31,16 @@ public class GAuthImpl implements GAuth {
         ACCESS,
         REFRESH
     }
-    public GAuthToken generateToken(String email, String password, String clientId, String clientSecret, String redirectUri) throws IOException {
+    public GAuthToken generateToken(String email, String password, String clientId, String clientSecret, String redirectUri) {
         String code = generateCode(email, password).getCode();
         return new GAuthToken(getToken(code, clientId, clientSecret, redirectUri));
     }
 
-    public GAuthToken generateToken(String code, String clientId, String clientSecret, String redirectUri) throws IOException {
+    public GAuthToken generateToken(String code, String clientId, String clientSecret, String redirectUri) {
         return new GAuthToken(getToken(code, clientId, clientSecret, redirectUri));
     }
 
-    public GAuthCode generateCode(String email, String password) throws IOException {
+    public GAuthCode generateCode(String email, String password) {
         Map<String, String> body = new HashMap<>();
         body.put("email", email);
         body.put("password", password);
@@ -48,20 +48,20 @@ public class GAuthImpl implements GAuth {
         return new GAuthCode(code);
     }
 
-    public GAuthToken refresh(String refreshToken) throws IOException{
+    public GAuthToken refresh(String refreshToken) {
         if(!refreshToken.startsWith("Bearer "))
             refreshToken = "Bearer "+refreshToken;
         return new GAuthToken(sendPatchGAuthServer(null, refreshToken, "/token", Auth.REFRESH));
     }
 
-    public GAuthUserInfo getUserInfo(String accessToken) throws IOException{
+    public GAuthUserInfo getUserInfo(String accessToken) {
         if(!accessToken.startsWith("Bearer "))
             accessToken = "Bearer "+accessToken;
         Map<String, Object> map = sendGetResourceServer(accessToken, "/user");
         return new GAuthUserInfo(map);
     }
 
-    private Map<String, String> getToken(String code, String clientId, String clientSecret, String redirectUri) throws IOException {
+    private Map<String, String> getToken(String code, String clientId, String clientSecret, String redirectUri) {
         Map<String, String> body = new HashMap<>();
         body.put("code", code);
         body.put("clientId", clientId);
@@ -70,33 +70,44 @@ public class GAuthImpl implements GAuth {
         return sendPostGAuthServer(body, null, "/token");
     }
 
-    private Map<String, String> sendPostGAuthServer(Map<String, String> body, String token, String url) throws IOException {
+    private Map<String, String> sendPostGAuthServer(Map<String, String> body, String token, String url) {
         return sendPost(body, token, GAuthServerURL+url);
     }
 
-    private Map<String, String> sendPatchGAuthServer(Map<String, String> body, String token, String url, Auth auth) throws IOException {
+    private Map<String, String> sendPatchGAuthServer(Map<String, String> body, String token, String url, Auth auth) {
         return sendPatch(body, token, GAuthServerURL+ url, auth);
     }
 
-    private Map<String, Object> sendGetResourceServer(String token, String url) throws IOException {
+    private Map<String, Object> sendGetResourceServer(String token, String url) {
         return sendGet(token, ResourceServerURL + url);
     }
 
-    private Map<String, Object> sendGet(String token, String url) throws IOException {
+    private Map<String, Object> sendGet(String token, String url) {
         HttpGet request = new HttpGet(url); //GET 메소드 URL 생성
         request.addHeader("Authorization", token);
-        CloseableHttpClient client = HttpClientBuilder.create().build();
-        HttpResponse response = client.execute(request);
-        Integer statusCode = response.getStatusLine().getStatusCode();
-        if(statusCode !=200)
-            throw new GAuthException(statusCode);
-        BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(response.getEntity().getContent(), "UTF-8"));
-        String responseBody = bufferedReader.readLine();
-        bufferedReader.close();
-        return mapper.readValue(responseBody, Map.class);
+        try (
+                CloseableHttpClient client = HttpClientBuilder.create().build();
+                CloseableHttpResponse response = client.execute(request)
+        ) {
+            Integer statusCode = response.getStatusLine().getStatusCode();
+            if(statusCode !=200)
+                throw new GAuthException(statusCode);
+            try (BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(response.getEntity().getContent(), "UTF-8"))) {
+                String responseBody = bufferedReader.readLine();
+                return mapper.readValue(responseBody, Map.class);
+            } catch (IOException e) {
+                throw new RuntimeException("BufferReader Can't read value", e);
+            }
+        }
+        catch (JsonProcessingException e) {
+            throw new JsonNotParseException(e);
+        }
+        catch (IOException e) {
+            throw new RuntimeException("Can't connect GAuth server", e);
+        }
     }
 
-    private Map<String, String> sendPatch(Map<String, String> body, String token, String url, Auth auth) throws IOException {
+    private Map<String, String> sendPatch(Map<String, String> body, String token, String url, Auth auth) {
         HttpPatch request = new HttpPatch(url);
         request.setHeader("Accept", "application/json");
         request.setHeader("Connection", "keep-alive");
@@ -107,17 +118,34 @@ public class GAuthImpl implements GAuth {
             request.addHeader("refreshToken", token);
         if(body != null){
             String json = new JSONObject(body).toJSONString();
-            request.setEntity(new StringEntity(json));
+            try {
+                request.setEntity(new StringEntity(json));
+            } catch (UnsupportedEncodingException e) {
+                throw new InvalidEncodingException(e);
+            }
         }
-        CloseableHttpClient client = HttpClientBuilder.create().build();
-        CloseableHttpResponse response = client.execute(request);
-        Integer statusCode = response.getStatusLine().getStatusCode();
-        if(statusCode !=200)
-            throw new GAuthException(statusCode);
-        BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(response.getEntity().getContent(), "UTF-8"));
-        String responseBody = bufferedReader.readLine();
-        bufferedReader.close();
-        return mapper.readValue(responseBody, Map.class);
+        try (
+                CloseableHttpClient client = HttpClientBuilder.create().build();
+                CloseableHttpResponse response = client.execute(request)
+        ) {
+            Integer statusCode = response.getStatusLine().getStatusCode();
+            if (statusCode != 200)
+                throw new GAuthException(statusCode);
+            try {
+                BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(response.getEntity().getContent(), "UTF-8"));
+                String responseBody = bufferedReader.readLine();
+                bufferedReader.close();
+                return mapper.readValue(responseBody, Map.class);
+            } catch (IOException e) {
+                throw new RuntimeException("BufferReader Can't read value", e);
+            }
+        }
+        catch (JsonProcessingException e) {
+            throw new JsonNotParseException(e);
+        }
+        catch (IOException e) {
+            throw new RuntimeException("Can't connect GAuth server", e);
+        }
     }
 
     private Map<String, String> sendPost(Map<String, String> body, String token, String url) {
@@ -150,7 +178,7 @@ public class GAuthImpl implements GAuth {
             }
         }
         catch (JsonProcessingException e) {
-            throw new RuntimeException("Can't process json", e);
+            throw new JsonNotParseException(e);
         }
         catch (IOException e) {
             throw new RuntimeException("Can't connect GAuth server", e);
