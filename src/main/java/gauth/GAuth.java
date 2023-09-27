@@ -1,9 +1,5 @@
 package gauth;
 
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-
 public interface GAuth {
     GAuthToken generateToken(String email, String password, String clientId, String clientSecret, String redirectUri);
 
