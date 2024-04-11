@@ -24,8 +24,8 @@ import java.util.Map;
 
 public class GAuthImpl implements GAuth {
     private final ObjectMapper mapper = new ObjectMapper();
-    private final String GAuthServerURL = "https://server.gauth.co.kr/oauth";
-    private final String ResourceServerURL = "https://open.gauth.co.kr";
+    private final String GAuthServerURL = "https://port-0-gauth-backend-85phb42bluutn9a7.sel5.cloudtype.app/oauth";
+    private final String ResourceServerURL = "https://port-0-gauth-resource-server-71t02clq411q18.sel4.cloudtype.app";
 
     private enum Auth{
         ACCESS,
