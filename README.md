@@ -19,12 +19,12 @@ dependencies
 
 ```gradle
 // build.gradle
-implementation 'com.github.GSM-MSG:GAuth-SDK-Java:v2.0.1'
+implementation 'com.github.GSM-MSG:GAuth-SDK-Java:v3.0.0'
 
 // or
 
 // build.gradle.kts
-implementation("com.github.GSM-MSG:GAuth-SDK-Java:v2.0.1")
+implementation("com.github.GSM-MSG:GAuth-SDK-Java:v3.0.0")
 ```
 
 ### Maven
@@ -43,7 +43,7 @@ dependencies
 <dependency>
 	  <groupId>com.github.GSM-MSG</groupId>
 	  <artifactId>GAuth-SDK-Java</artifactId>
-	  <version>v2.0.1</version>
+	  <version>v3.0.0</version>
 </dependency>
 ```
 <br>
