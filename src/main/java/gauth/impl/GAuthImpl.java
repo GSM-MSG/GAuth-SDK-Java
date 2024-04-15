@@ -3,9 +3,10 @@ package gauth.impl;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import gauth.GAuth;
-import gauth.GAuthCode;
-import gauth.GAuthToken;
-import gauth.GAuthUserInfo;
+import gauth.enums.TokenType;
+import gauth.response.GAuthCode;
+import gauth.response.GAuthToken;
+import gauth.response.GAuthUserInfo;
 import gauth.exception.GAuthException;
 import gauth.exception.InvalidEncodingException;
 import gauth.exception.JsonNotParseException;
@@ -27,10 +28,6 @@ public class GAuthImpl implements GAuth {
     private final String GAuthServerURL = "https://port-0-gauth-backend-85phb42bluutn9a7.sel5.cloudtype.app/oauth";
     private final String ResourceServerURL = "https://port-0-gauth-resource-server-71t02clq411q18.sel4.cloudtype.app";
 
-    private enum Auth{
-        ACCESS,
-        REFRESH
-    }
     public GAuthToken generateToken(String email, String password, String clientId, String clientSecret, String redirectUri) {
         String code = generateCode(email, password).getCode();
         return new GAuthToken(getToken(code, clientId, clientSecret, redirectUri));
@@ -51,7 +48,7 @@ public class GAuthImpl implements GAuth {
     public GAuthToken refresh(String refreshToken) {
         if(!refreshToken.startsWith("Bearer "))
             refreshToken = "Bearer "+refreshToken;
-        return new GAuthToken(sendPatchGAuthServer(null, refreshToken, "/token", Auth.REFRESH));
+        return new GAuthToken(sendPatchGAuthServer(null, refreshToken, "/token", TokenType.REFRESH));
     }
 
     public GAuthUserInfo getUserInfo(String accessToken) {
@@ -74,8 +71,8 @@ public class GAuthImpl implements GAuth {
         return sendPost(body, token, GAuthServerURL+url);
     }
 
-    private Map<String, String> sendPatchGAuthServer(Map<String, String> body, String token, String url, Auth auth) {
-        return sendPatch(body, token, GAuthServerURL+ url, auth);
+    private Map<String, String> sendPatchGAuthServer(Map<String, String> body, String token, String url, TokenType tokenType) {
+        return sendPatch(body, token, GAuthServerURL+ url, tokenType);
     }
 
     private Map<String, Object> sendGetResourceServer(String token, String url) {
@@ -107,12 +104,12 @@ public class GAuthImpl implements GAuth {
         }
     }
 
-    private Map<String, String> sendPatch(Map<String, String> body, String token, String url, Auth auth) {
+    private Map<String, String> sendPatch(Map<String, String> body, String token, String url, TokenType tokenType) {
         HttpPatch request = new HttpPatch(url);
         request.setHeader("Accept", "application/json");
         request.setHeader("Connection", "keep-alive");
         request.setHeader("Content-Type", "application/json");
-        if(auth == Auth.ACCESS)
+        if(tokenType == TokenType.ACCESS)
             request.setHeader("Authorization", token);
         else
             request.addHeader("refreshToken", token);

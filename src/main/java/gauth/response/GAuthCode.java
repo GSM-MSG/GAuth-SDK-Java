@@ -1,4 +1,4 @@
-package gauth;
+package gauth.response;
 
 public class GAuthCode {
     private String code;
