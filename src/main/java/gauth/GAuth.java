@@ -1,5 +1,9 @@
 package gauth;
 
+import gauth.response.GAuthCode;
+import gauth.response.GAuthToken;
+import gauth.response.GAuthUserInfo;
+
 public interface GAuth {
     GAuthToken generateToken(String email, String password, String clientId, String clientSecret, String redirectUri);
 
