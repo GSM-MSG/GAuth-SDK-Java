@@ -1,4 +1,4 @@
-package gauth;
+package gauth.response;
 
 import java.util.Map;
 
