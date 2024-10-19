@@ -1,15 +1,12 @@
 package gauth.impl;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import gauth.GAuth;
-import gauth.enums.TokenType;
-import gauth.response.GAuthCode;
-import gauth.response.GAuthToken;
-import gauth.response.GAuthUserInfo;
-import gauth.exception.GAuthException;
-import gauth.exception.InvalidEncodingException;
-import gauth.exception.JsonNotParseException;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.UnsupportedEncodingException;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPatch;
@@ -19,14 +16,22 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.json.simple.JSONObject;
 
-import java.io.*;
-import java.util.HashMap;
-import java.util.Map;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import gauth.GAuth;
+import gauth.enums.TokenType;
+import gauth.exception.GAuthException;
+import gauth.exception.InvalidEncodingException;
+import gauth.exception.JsonNotParseException;
+import gauth.response.GAuthCode;
+import gauth.response.GAuthToken;
+import gauth.response.GAuthUserInfo;
 
 public class GAuthImpl implements GAuth {
     private final ObjectMapper mapper = new ObjectMapper();
-    private final String GAuthServerURL = "https://port-0-gauth-backend-85phb42bluutn9a7.sel5.cloudtype.app/oauth";
-    private final String ResourceServerURL = "https://port-0-gauth-resource-server-71t02clq411q18.sel4.cloudtype.app";
+    private final String GAuthServerURL = "https://server-gauth.msg-team.com/oauth";
+    private final String ResourceServerURL = "https://resource-gauth.msg-team.com";
 
     public GAuthToken generateToken(String email, String password, String clientId, String clientSecret, String redirectUri) {
         String code = generateCode(email, password).getCode();
